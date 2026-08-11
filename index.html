@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vault Link Check</title>
+</head>
+<body>
+<style>
+  :root {
+    --ground: #FAF9F6;
+    --surface: #F0EDE6;
+    --ink: #2A2723;
+    --ink-muted: #7A756C;
+    --accent: #5B7F71;
+    --accent-dim: rgba(91,127,113,.12);
+    --accent-hover: #4A6E60;
+    --resolved: #4A7A5A;
+    --resolved-bg: rgba(74,122,90,.1);
+    --nearmiss: #B08A3E;
+    --nearmiss-bg: rgba(176,138,62,.1);
+    --dead: #A05A4E;
+    --dead-bg: rgba(160,90,78,.1);
+    --border: #D8D3C8;
+    --font-display: 'Iowan Old Style', Charter, 'Bitstream Charter', Georgia, serif;
+    --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-mono: 'SF Mono', 'Cascadia Code', Consolas, 'Liberation Mono', monospace;
+    --radius: 6px;
+    --col: 720px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #1C1B18;
+      --surface: #26241F;
+      --ink: #E8E5DE;
+      --ink-muted: #8A857C;
+      --accent: #7AA394;
+      --accent-dim: rgba(122,163,148,.12);
+      --accent-hover: #8BB8A8;
+      --resolved: #6AA07A;
+      --resolved-bg: rgba(106,160,122,.12);
+      --nearmiss: #D0AA5E;
+      --nearmiss-bg: rgba(208,170,94,.12);
+      --dead: #C07A6E;
+      --dead-bg: rgba(192,122,110,.12);
+      --border: #3A372F;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #1C1B18;
+    --surface: #26241F;
+    --ink: #E8E5DE;
+    --ink-muted: #8A857C;
+    --accent: #7AA394;
+    --accent-dim: rgba(122,163,148,.12);
+    --accent-hover: #8BB8A8;
+    --resolved: #6AA07A;
+    --resolved-bg: rgba(106,160,122,.12);
+    --nearmiss: #D0AA5E;
+    --nearmiss-bg: rgba(208,170,94,.12);
+    --dead: #C07A6E;
+    --dead-bg: rgba(192,122,110,.12);
+    --border: #3A372F;
+  }
+  :root[data-theme="light"] {
+    --ground: #FAF9F6;
+    --surface: #F0EDE6;
+    --ink: #2A2723;
+    --ink-muted: #7A756C;
+    --accent: #5B7F71;
+    --accent-dim: rgba(91,127,113,.12);
+    --accent-hover: #4A6E60;
+    --resolved: #4A7A5A;
+    --resolved-bg: rgba(74,122,90,.1);
+    --nearmiss: #B08A3E;
+    --nearmiss-bg: rgba(176,138,62,.1);
+    --dead: #A05A4E;
+    --dead-bg: rgba(160,90,78,.1);
+    --border: #D8D3C8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #app {
+    max-width: var(--col);
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header { text-align: center; margin-bottom: 40px; }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin-bottom: 6px;
+  }
+
+  .subtitle {
+    color: var(--ink-muted);
+    font-size: 16px;
+  }
+
+  /* ── Drop zone ── */
+  .dropzone {
+    position: relative;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 56px 32px 48px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .dz-motif {
+    font-family: var(--font-display);
+    font-size: 56px;
+    font-weight: 300;
+    color: var(--ink-muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 20px;
+    user-select: none;
+    opacity: .55;
+  }
+
+  .dz-title {
+    font-size: 17px;
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+
+  .dz-hint {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+
+  .privacy {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 16px;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Progress ── */
+  .progress-area {
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 48px 32px;
+    text-align: center;
+  }
+  .progress-text {
+    font-size: 15px;
+    color: var(--ink-muted);
+    margin-bottom: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+  .progress-bar {
+    height: 4px;
+    background: var(--surface);
+    border-radius: 2px;
+    max-width: 320px;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width .15s;
+  }
+
+  /* ── Results ── */
+  .results { animation: fadeIn .35s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .results { animation: none; }
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .summary-hero {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .summary-pct {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 64px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+  }
+  .summary-label {
+    display: block;
+    font-size: 15px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat {
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    text-align: center;
+  }
+  .stat--resolved { background: var(--resolved-bg); }
+  .stat--nearmiss { background: var(--nearmiss-bg); }
+  .stat--dead { background: var(--dead-bg); }
+
+  .stat-count {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+  .stat--resolved .stat-count { color: var(--resolved); }
+  .stat--nearmiss .stat-count { color: var(--nearmiss); }
+  .stat--dead .stat-count { color: var(--dead); }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 36px;
+  }
+
+  button {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 18px;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--accent-hover); }
+  .btn-secondary {
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+
+  .copied-toast {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--resolved);
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .copied-toast.show { opacity: 1; }
+
+  /* ── Sections ── */
+  .section {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .section summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    list-style: none;
+  }
+  .section summary::-webkit-details-marker { display: none; }
+  .section summary::before {
+    content: '▸';
+    font-size: 12px;
+    color: var(--ink-muted);
+    transition: transform .15s;
+    flex-shrink: 0;
+  }
+  .section[open] summary::before { transform: rotate(90deg); }
+  @media (prefers-reduced-motion: reduce) {
+    .section summary::before { transition: none; }
+  }
+
+  .section--nearmiss summary { border-left: 3px solid var(--nearmiss); }
+  .section--dead summary { border-left: 3px solid var(--dead); }
+
+  .section-badge {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .section--nearmiss .section-badge { background: var(--nearmiss-bg); color: var(--nearmiss); }
+  .section--dead .section-badge { background: var(--dead-bg); color: var(--dead); }
+
+  .section-hint {
+    font-weight: 400;
+    color: var(--ink-muted);
+    font-size: 13px;
+  }
+
+  .section-body { padding: 0 16px 16px; }
+
+  .file-group { margin-bottom: 14px; }
+  .file-group:last-child { margin-bottom: 0; }
+
+  .file-group-header {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-muted);
+    padding: 4px 0 6px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 6px;
+  }
+
+  .link-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+
+  .link-text {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    background: var(--surface);
+    padding: 1px 6px;
+    border-radius: 3px;
+    word-break: break-all;
+  }
+
+  .link-arrow { color: var(--ink-muted); flex-shrink: 0; }
+
+  .link-target {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent);
+    word-break: break-all;
+  }
+
+  .match-type {
+    font-size: 11px;
+    color: var(--ink-muted);
+    font-style: italic;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--ink-muted);
+  }
+  .empty-state p { margin-bottom: 6px; }
+
+  .all-clear {
+    text-align: center;
+    padding: 20px;
+    background: var(--resolved-bg);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    font-size: 15px;
+  }
+  .all-clear strong { color: var(--resolved); }
+
+  footer {
+    text-align: center;
+    margin-top: 48px;
+    font-size: 12px;
+    color: var(--ink-muted);
+  }
+
+  .hidden { display: none; }
+
+  @media (max-width: 520px) {
+    #app { padding: 32px 16px 64px; }
+    h1 { font-size: 26px; }
+    .dz-motif { font-size: 40px; }
+    .summary-pct { font-size: 48px; }
+    .stats-row { grid-template-columns: 1fr; gap: 8px; }
+    .stat { display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px 14px; }
+    .stat-count { font-size: 22px; }
+    .stat-label { margin-top: 0; }
+    .link-row { flex-direction: column; gap: 2px; }
+    .match-type { margin-left: 0; }
+    .actions { flex-direction: column; align-items: stretch; }
+  }
+</style>
+
+<div id="app">
+  <header>
+    <h1>Vault Link Check</h1>
+    <p class="subtitle">Find broken wiki links in your Obsidian vault</p>
+  </header>
+
+  <main id="main">
+    <div id="inputView">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-motif">[[ &middot; ]]</div>
+        <p class="dz-title">Drop your vault folder here</p>
+        <p class="dz-hint">or click to browse</p>
+        <input type="file" id="folderInput" webkitdirectory>
+      </div>
+      <p class="privacy">Your notes never leave this browser tab</p>
+    </div>
+
+    <div id="progressView" class="hidden">
+      <div class="progress-area">
+        <p class="progress-text" id="progressText">Reading files&hellip;</p>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      </div>
+      <p class="privacy">Your notes never leave this browser tab</p>
+    </div>
+
+    <div id="resultsView" class="hidden"></div>
+  </main>
+
+  <footer>No data sent anywhere &middot; runs entirely in your browser</footer>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $input    = document.getElementById('inputView');
+  const $progress = document.getElementById('progressView');
+  const $results  = document.getElementById('resultsView');
+  const $dropzone = document.getElementById('dropzone');
+  const $folder   = document.getElementById('folderInput');
+  const $pText    = document.getElementById('progressText');
+  const $pFill    = document.getElementById('progressFill');
+
+  function show(view) {
+    [$input, $progress, $results].forEach(v => v.classList.add('hidden'));
+    view.classList.remove('hidden');
+  }
+
+  // ── Drop / click ──
+  $dropzone.addEventListener('dragover', e => { e.preventDefault(); $dropzone.classList.add('dragover'); });
+  $dropzone.addEventListener('dragleave', () => $dropzone.classList.remove('dragover'));
+  $dropzone.addEventListener('drop', async e => {
+    e.preventDefault();
+    $dropzone.classList.remove('dragover');
+    const items = e.dataTransfer.items;
+    if (!items || !items.length) return;
+    show($progress);
+    const files = [];
+    const entries = [];
+    for (let i = 0; i < items.length; i++) {
+      const entry = items[i].webkitGetAsEntry && items[i].webkitGetAsEntry();
+      if (entry) entries.push(entry);
+    }
+    await readEntries(entries, '', files);
+    await processFiles(files);
+  });
+
+  $folder.addEventListener('change', async e => {
+    const fileList = e.target.files;
+    if (!fileList || !fileList.length) return;
+    show($progress);
+    const files = [];
+    for (let i = 0; i < fileList.length; i++) {
+      const f = fileList[i];
+      files.push({ path: f.webkitRelativePath || f.name, file: f });
+    }
+    await processFiles(files);
+  });
+
+  async function readEntries(entries, basePath, out) {
+    for (const entry of entries) {
+      if (entry.isFile) {
+        const file = await new Promise(r => entry.file(r));
+        out.push({ path: basePath + entry.name, file });
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        let batch;
+        const children = [];
+        do {
+          batch = await new Promise(r => reader.readEntries(r));
+          children.push(...batch);
+        } while (batch.length > 0);
+        await readEntries(children, basePath + entry.name + '/', out);
+      }
+    }
+  }
+
+  // ── Core processing ──
+  async function processFiles(rawFiles) {
+    // Strip the root folder prefix so paths are vault-relative
+    const rootPrefix = findRootPrefix(rawFiles);
+    const allFiles = rawFiles.map(f => ({
+      path: f.path.startsWith(rootPrefix) ? f.path.slice(rootPrefix.length) : f.path,
+      file: f.file
+    }));
+
+    const total = allFiles.length;
+    if (total === 0) {
+      showEmpty('No files found. Make sure you selected your vault’s root folder.');
+      return;
+    }
+
+    // Build file index (all files as valid link targets)
+    const stemIndex = new Map();   // lowercase stem → [{path, stem}]
+    const pathIndex = new Map();   // lowercase full relative path without ext → path
+    const aliasIndex = new Map();  // lowercase alias → {path, stem}
+    const allStems = [];
+
+    for (const f of allFiles) {
+      const stem = filenameStem(f.path);
+      const key = stem.toLowerCase();
+      if (!stemIndex.has(key)) stemIndex.set(key, []);
+      stemIndex.get(key).push({ path: f.path, stem });
+      const pathNoExt = f.path.replace(/\.[^.]+$/, '').toLowerCase();
+      pathIndex.set(pathNoExt, f.path);
+      allStems.push({ path: f.path, stem, key });
+    }
+
+    // Read .md files and extract links + aliases
+    const mdFiles = allFiles.filter(f => /\.md$/i.test(f.path));
+    if (mdFiles.length === 0) {
+      showEmpty('No markdown files found. Make sure you selected an Obsidian vault.');
+      return;
+    }
+
+    const linksByFile = [];
+    let readCount = 0;
+
+    for (const mf of mdFiles) {
+      const content = await readText(mf.file);
+      readCount++;
+      if (readCount % 20 === 0 || readCount === mdFiles.length) {
+        $pText.textContent = `Reading files… ${readCount.toLocaleString()} of ${mdFiles.length.toLocaleString()}`;
+        $pFill.style.width = Math.round((readCount / mdFiles.length) * 100) + '%';
+        await tick();
+      }
+
+      // Parse aliases
+      const aliases = parseAliases(content);
+      for (const a of aliases) {
+        const ak = a.toLowerCase();
+        if (!aliasIndex.has(ak)) {
+          aliasIndex.set(ak, { path: mf.path, stem: filenameStem(mf.path) });
+        }
+      }
+
+      const links = extractLinks(content);
+      if (links.length) linksByFile.push({ source: mf.path, links });
+    }
+
+    $pText.textContent = 'Resolving links…';
+    $pFill.style.width = '100%';
+    await tick();
+
+    // Build normalized index for near-miss matching
+    const normalizedIndex = new Map();
+    for (const s of allStems) {
+      const n = normalize(s.key);
+      if (!normalizedIndex.has(n)) normalizedIndex.set(n, []);
+      normalizedIndex.get(n).push(s);
+    }
+    // Add aliases to normalized index
+    for (const [ak, info] of aliasIndex) {
+      const n = normalize(ak);
+      if (!normalizedIndex.has(n)) normalizedIndex.set(n, []);
+      normalizedIndex.get(n).push({ path: info.path, stem: info.stem, key: ak });
+    }
+
+    // Resolve each link
+    const resolved = [];
+    const nearMisses = [];
+    const dead = [];
+
+    for (const { source, links } of linksByFile) {
+      for (const lnk of links) {
+        const target = lnk.target;
+        if (!target) continue;
+        const targetLower = target.toLowerCase();
+
+        // 1. Exact stem match
+        if (stemIndex.has(targetLower)) {
+          resolved.push({ source, raw: lnk.raw, target });
+          continue;
+        }
+
+        // 2. Path-qualified match: [[folder/note]]
+        const pathLower = targetLower.replace(/\.[^.]+$/, '');
+        if (pathIndex.has(pathLower)) {
+          resolved.push({ source, raw: lnk.raw, target });
+          continue;
+        }
+
+        // 3. Alias match
+        if (aliasIndex.has(targetLower)) {
+          resolved.push({ source, raw: lnk.raw, target });
+          continue;
+        }
+
+        // 4. If path-qualified, try just the basename
+        if (target.includes('/')) {
+          const baseStem = filenameStem(target).toLowerCase();
+          if (stemIndex.has(baseStem)) {
+            resolved.push({ source, raw: lnk.raw, target });
+            continue;
+          }
+        }
+
+        // Unresolved — check near-misses
+        const nm = findNearMiss(target, targetLower, stemIndex, aliasIndex, normalizedIndex, allStems);
+        if (nm) {
+          nearMisses.push({ source, raw: lnk.raw, target, match: nm.match, matchType: nm.type });
+        } else {
+          dead.push({ source, raw: lnk.raw, target });
+        }
+      }
+    }
+
+    renderResults({ resolved, nearMisses, dead });
+  }
+
+  function findNearMiss(target, targetLower, stemIndex, aliasIndex, normalizedIndex, allStems) {
+    const normTarget = normalize(targetLower);
+
+    // Exact normalized match (spaces/hyphens/underscores/punctuation differ)
+    const normMatches = normalizedIndex.get(normTarget);
+    if (normMatches && normMatches.length) {
+      return { match: normMatches[0].path, type: 'similar name' };
+    }
+
+    // Fuzzy: Levenshtein ≤ 2 against all stems
+    let bestDist = Infinity;
+    let bestMatch = null;
+    for (const s of allStems) {
+      if (Math.abs(s.key.length - targetLower.length) > 2) continue;
+      const d = levenshtein(targetLower, s.key);
+      if (d <= 2 && d < bestDist) {
+        bestDist = d;
+        bestMatch = s;
+      }
+    }
+    if (bestMatch) {
+      return { match: bestMatch.path, type: 'possible match' };
+    }
+
+    // Token subset: tokens of one are a subset of the other
+    const targetTokens = tokenize(targetLower);
+    if (targetTokens.length >= 2) {
+      for (const s of allStems) {
+        const stemTokens = tokenize(s.key);
+        if (stemTokens.length < 2) continue;
+        if (isSubset(targetTokens, stemTokens) || isSubset(stemTokens, targetTokens)) {
+          return { match: s.path, type: 'possible match' };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    if (a.length > b.length) { const t = a; a = b; b = t; }
+    const row = Array.from({ length: a.length + 1 }, (_, i) => i);
+    for (let j = 1; j <= b.length; j++) {
+      let prev = row[0];
+      row[0] = j;
+      for (let i = 1; i <= a.length; i++) {
+        const val = Math.min(row[i] + 1, row[i - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1));
+        prev = row[i];
+        row[i] = val;
+      }
+    }
+    return row[a.length];
+  }
+
+  function normalize(s) {
+    return s.replace(/[\s\-_.,;:!?'"(){}[\]#/\\]/g, '').toLowerCase();
+  }
+
+  function tokenize(s) {
+    return s.split(/[\s\-_]+/).filter(Boolean);
+  }
+
+  function isSubset(a, b) {
+    const bSet = new Set(b);
+    return a.every(t => bSet.has(t));
+  }
+
+  // ── Link extraction ──
+  function extractLinks(content) {
+    // Remove fenced code blocks
+    const lines = content.split('\n');
+    const cleaned = [];
+    let inFence = false;
+    let fenceChar = '';
+    let fenceLen = 0;
+
+    for (const line of lines) {
+      const fenceMatch = line.match(/^(`{3,}|~{3,})/);
+      if (fenceMatch) {
+        if (!inFence) {
+          inFence = true;
+          fenceChar = fenceMatch[1][0];
+          fenceLen = fenceMatch[1].length;
+          cleaned.push('');
+          continue;
+        } else if (line.trimEnd().startsWith(fenceChar.repeat(fenceLen)) &&
+                   line.trimEnd().replace(new RegExp('^' + escRe(fenceChar) + '+'), '') === '') {
+          inFence = false;
+          cleaned.push('');
+          continue;
+        }
+      }
+      cleaned.push(inFence ? '' : line);
+    }
+
+    const text = cleaned.join('\n');
+
+    // Remove inline code
+    const noInline = text.replace(/``[^`]*``|`[^`]*`/g, '');
+
+    // Extract wiki links
+    const links = [];
+    const re = /!?\[\[([^\]]+)\]\]/g;
+    let m;
+    while ((m = re.exec(noInline)) !== null) {
+      const raw = m[0];
+      let target = m[1];
+      target = target.split('|')[0];
+      target = target.split('#')[0];
+      target = target.trim();
+      if (target) links.push({ raw, target });
+    }
+
+    return links;
+  }
+
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  // ── Frontmatter aliases ──
+  function parseAliases(content) {
+    const fmMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+    if (!fmMatch) return [];
+    const fm = fmMatch[1];
+    const aliasLine = fm.match(/^aliases:\s*(.*)$/m);
+    if (!aliasLine) return [];
+
+    const value = aliasLine[1].trim();
+    if (value.startsWith('[')) {
+      return value.slice(1, -1).split(',')
+        .map(s => s.trim().replace(/^["']|["']$/g, ''))
+        .filter(Boolean);
+    } else if (value) {
+      return [value.replace(/^["']|["']$/g, '')];
+    }
+
+    // Block list form
+    const fmLines = fm.split('\n');
+    const idx = fmLines.findIndex(l => /^aliases:/.test(l));
+    if (idx < 0) return [];
+    const aliases = [];
+    for (let i = idx + 1; i < fmLines.length; i++) {
+      const item = fmLines[i].match(/^\s+-\s+(.+)/);
+      if (item) {
+        aliases.push(item[1].trim().replace(/^["']|["']$/g, ''));
+      } else {
+        break;
+      }
+    }
+    return aliases;
+  }
+
+  // ── Helpers ──
+  function filenameStem(path) {
+    const name = path.split('/').pop();
+    const dotIdx = name.lastIndexOf('.');
+    return dotIdx > 0 ? name.slice(0, dotIdx) : name;
+  }
+
+  function findRootPrefix(files) {
+    if (!files.length) return '';
+    const first = files[0].path;
+    const slash = first.indexOf('/');
+    if (slash < 0) return '';
+    const prefix = first.slice(0, slash + 1);
+    if (files.every(f => f.path.startsWith(prefix))) return prefix;
+    return '';
+  }
+
+  function readText(file) {
+    return new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result || '');
+      reader.onerror = () => resolve('');
+      reader.readAsText(file);
+    });
+  }
+
+  function tick() { return new Promise(r => setTimeout(r, 0)); }
+
+  // ── Empty state ──
+  function showEmpty(msg) {
+    $results.innerHTML = '<div class="empty-state"><p>' + esc(msg) + '</p>' +
+      '<button class="btn-secondary" onclick="location.reload()">Try again</button></div>';
+    $results.classList.add('results');
+    show($results);
+  }
+
+  // ── Render results ──
+  let lastReport = null;
+
+  function renderResults(report) {
+    lastReport = report;
+    const { resolved, nearMisses, dead } = report;
+    const total = resolved.length + nearMisses.length + dead.length;
+    const pct = total ? ((resolved.length / total) * 100).toFixed(1) : '100.0';
+
+    let html = '<div class="results">';
+
+    // Summary
+    html += '<div class="summary-hero">';
+    html += '<span class="summary-pct">' + pct + '%</span>';
+    html += '<span class="summary-label">' + resolved.length.toLocaleString() + ' of ' +
+            total.toLocaleString() + ' links resolved</span>';
+    html += '</div>';
+
+    html += '<div class="stats-row">';
+    html += '<div class="stat stat--resolved"><span class="stat-count">' + resolved.length.toLocaleString() +
+            '</span><span class="stat-label">Resolved</span></div>';
+    html += '<div class="stat stat--nearmiss"><span class="stat-count">' + nearMisses.length.toLocaleString() +
+            '</span><span class="stat-label">Near-misses</span></div>';
+    html += '<div class="stat stat--dead"><span class="stat-count">' + dead.length.toLocaleString() +
+            '</span><span class="stat-label">Dead</span></div>';
+    html += '</div>';
+
+    html += '<div class="actions">';
+    html += '<button class="btn-primary" id="copyBtn">Copy report as markdown</button>';
+    html += '<span class="copied-toast" id="copiedToast">Copied</span>';
+    html += '<button class="btn-secondary" id="rescanBtn">Scan another vault</button>';
+    html += '</div>';
+
+    // All clear?
+    if (nearMisses.length === 0 && dead.length === 0) {
+      html += '<div class="all-clear"><strong>All links resolve</strong> — your vault is clean.</div>';
+    }
+
+    // Near-misses section
+    if (nearMisses.length > 0) {
+      html += '<details class="section section--nearmiss" open>';
+      html += '<summary><span class="section-badge">' + nearMisses.length + '</span> Near-misses';
+      html += '<span class="section-hint">— likely exist under a different name</span></summary>';
+      html += '<div class="section-body">';
+      html += renderGrouped(nearMisses, true);
+      html += '</div></details>';
+    }
+
+    // Dead section
+    if (dead.length > 0) {
+      html += '<details class="section section--dead"' + (nearMisses.length === 0 ? ' open' : '') + '>';
+      html += '<summary><span class="section-badge">' + dead.length + '</span> Dead links';
+      html += '<span class="section-hint">— no matching file found</span></summary>';
+      html += '<div class="section-body">';
+      html += renderGrouped(dead, false);
+      html += '</div></details>';
+    }
+
+    html += '</div>';
+    $results.innerHTML = html;
+    show($results);
+
+    document.getElementById('copyBtn').addEventListener('click', copyReport);
+    document.getElementById('rescanBtn').addEventListener('click', () => {
+      $folder.value = '';
+      show($input);
+    });
+  }
+
+  function renderGrouped(items, showMatch) {
+    const groups = new Map();
+    for (const item of items) {
+      if (!groups.has(item.source)) groups.set(item.source, []);
+      groups.get(item.source).push(item);
+    }
+
+    let html = '';
+    for (const [source, entries] of groups) {
+      html += '<div class="file-group">';
+      html += '<div class="file-group-header">' + esc(source) + '</div>';
+      for (const e of entries) {
+        html += '<div class="link-row">';
+        html += '<code class="link-text">[[' + esc(e.target) + ']]</code>';
+        if (showMatch && e.match) {
+          html += '<span class="link-arrow">→</span>';
+          html += '<code class="link-target">' + esc(e.match) + '</code>';
+          html += '<span class="match-type">' + esc(e.matchType) + '</span>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    return html;
+  }
+
+  function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
+
+  // ── Copy report ──
+  function copyReport() {
+    if (!lastReport) return;
+    const { resolved, nearMisses, dead } = lastReport;
+    const total = resolved.length + nearMisses.length + dead.length;
+    const pct = total ? ((resolved.length / total) * 100).toFixed(1) : '100.0';
+
+    let md = '# Vault Link Check Report\n\n';
+    md += '## Summary\n';
+    md += '- **' + pct + '%** resolved (' + resolved.length + ' of ' + total + ')\n';
+    md += '- ' + nearMisses.length + ' near-misses\n';
+    md += '- ' + dead.length + ' dead links\n\n';
+
+    if (nearMisses.length > 0) {
+      md += '## Near-misses\n';
+      for (const nm of nearMisses) {
+        md += '- [ ] [[' + filenameStem(nm.source) + ']]';
+        md += ' → `[[' + nm.target + ']]`';
+        if (nm.match) md += ' — likely [[' + filenameStem(nm.match) + ']]';
+        md += '\n';
+      }
+      md += '\n';
+    }
+
+    if (dead.length > 0) {
+      md += '## Dead links\n';
+      for (const d of dead) {
+        md += '- [ ] [[' + filenameStem(d.source) + ']]';
+        md += ' → `[[' + d.target + ']]`\n';
+      }
+      md += '\n';
+    }
+
+    navigator.clipboard.writeText(md).then(() => {
+      const toast = document.getElementById('copiedToast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    });
+  }
+})();
+</script>
+</body></html>
