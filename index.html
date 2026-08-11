@@ -351,6 +351,14 @@
   .section--planned .section-badge { background: var(--planned-bg); color: var(--planned); }
   .section--dead .section-badge { background: var(--dead-bg); color: var(--dead); }
 
+  .section-caveat {
+    font-size: 13px;
+    color: var(--ink-muted);
+    font-style: italic;
+    margin-bottom: 14px;
+    line-height: 1.55;
+  }
+
   .section-hint {
     font-weight: 400;
     color: var(--ink-muted);
@@ -932,8 +940,9 @@
     if (dead.length > 0) {
       html += '<details class="section section--planned"' + (nearMisses.length === 0 ? ' open' : '') + '>';
       html += '<summary><span class="section-badge">' + dead.length + '</span> Planned notes';
-      html += '<span class="section-hint">— ideas past-you linked to but never wrote</span></summary>';
+      html += '<span class="section-hint">— links that point at nothing</span></summary>';
       html += '<div class="section-body">';
+      html += '<p class="section-caveat">Often these are notes you meant to create and never did — though a few may be typos the fuzzy matcher missed, or notes you’ve since deleted.</p>';
       html += renderGrouped(dead, false);
       html += '</div></details>';
     }
@@ -989,13 +998,13 @@
     const pct = total ? ((resolved.length / total) * 100).toFixed(1) : '100.0';
 
     let md = '# Vault Link Check Report\n\n';
-    md += '## Summary\n';
-    md += '- **' + pct + '%** resolved (' + resolved.length + ' of ' + total + ')\n';
-    md += '- ' + nearMisses.length + ' near-misses\n';
-    md += '- ' + dead.length + ' planned notes\n\n';
+    md += '**' + pct + '%** resolved (' + resolved.length + ' of ' + total + ') · ';
+    md += nearMisses.length + ' near-misses · ' + dead.length + ' planned notes\n\n';
+    md += '---\n\n';
 
     if (nearMisses.length > 0) {
-      md += '## Near-misses\n';
+      md += '# Cleanup checklist\n\n';
+      md += 'Links that exist under a different name. Repair these:\n\n';
       for (const nm of nearMisses) {
         md += '- [ ] [[' + filenameStem(nm.source) + ']]';
         md += ' → `[[' + nm.target + ']]`';
@@ -1006,8 +1015,9 @@
     }
 
     if (dead.length > 0) {
-      md += '## Planned notes\n';
-      md += 'Notes you linked to but never wrote:\n\n';
+      if (nearMisses.length > 0) md += '---\n\n';
+      md += '# Ideas backlog\n\n';
+      md += 'Notes you linked to but never wrote. Some may be typos the matcher missed or notes you\'ve since deleted, but most are ideas worth revisiting:\n\n';
       for (const d of dead) {
         md += '- [ ] `[[' + d.target + ']]` — linked from [[' + filenameStem(d.source) + ']]\n';
       }
