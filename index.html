@@ -770,6 +770,9 @@
 
   // ── Link extraction ──
   function extractLinks(content) {
+    // Strip frontmatter — links in YAML properties are metadata, not content references
+    content = content.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, '');
+
     // Remove fenced code blocks
     const lines = content.split('\n');
     const cleaned = [];
@@ -810,6 +813,7 @@
       let target = m[1];
       target = target.split('|')[0];
       target = target.split('#')[0];
+      target = target.split('^')[0];
       target = target.trim();
       if (target) links.push({ raw, target });
     }
