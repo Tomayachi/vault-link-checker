@@ -414,10 +414,20 @@
   .all-clear strong { color: var(--resolved); }
 
   footer {
-    text-align: center;
     margin-top: 48px;
-    font-size: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.65;
     color: var(--ink-muted);
+  }
+  .privacy-heading {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+    color: var(--ink);
   }
 
   .hidden { display: none; }
@@ -465,7 +475,10 @@
     <div id="resultsView" class="hidden"></div>
   </main>
 
-  <footer>No data sent anywhere &middot; runs entirely in your browser</footer>
+  <footer>
+    <p class="privacy-heading">Privacy notice</p>
+    <p>Since it matters here: it's a single static HTML page with no external scripts. Your files are read locally in the browser tab and nothing is sent anywhere. No account, no tracking, no install. Don't take my word for it&hairsp;&mdash;&hairsp;the source is right there un-minified (right-click, View Source), you can watch the Network tab stay empty while it scans, and it works just as well with your internet disabled. You can even save the page with Ctrl+S and run your own copy offline forever.</p>
+  </footer>
 </div>
 
 <script>
